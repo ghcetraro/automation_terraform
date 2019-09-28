@@ -1,0 +1,567 @@
+
+How to Install Terraform and Provision AWS EC2 Cloud Instance
+
+The primitives of terraform used to define infrastructure as a code (IaaC). You can build, change and version your infrastructure in AWS, Digital Ocean, Google Cloud, Heroku, Microsoft Azure etc. using the same tool. Describe components of your single application or entire data center using terraform. In this tutorial, we will create an infrastructure using terraform and provision AWS EC2 instance.
+1. Install Terraform
+
+Download terraform depending on your system. Installation is very simple. Download the terraform zip archive and unzip it in a suitable location. Once we have unzipped the terraform, update PATH environment variable pointing to terraform. Since the folder /usr/local/bin is already set to PATH environment variable, we don't need to set it again. If you are using any other location, then specify it in the PATH environment variable either in .bash_profile or in /etc/profile.
+
+    [thegeek@mysandbox ~]$ cd /usr/local/src
+    [root@mysandbox src]# wget https://releases.hashicorp.com/terraform/0.8.5/terraform_0.8.5_linux_386.zip
+    [root@mysandbox src]# unzip terraform_0.8.5_linux_386.zip
+    [root@mysandbox src]# mv terraform /usr/local/bin/
+
+Now add the following line to add terraform in PATH location.
+
+    export PATH=$PATH:/terraform-path/
+
+Verify the installation of terraform with the following command
+
+    [root@mysandbox src]# terraform
+    Usage: terraform [--version] [--help] <command> [args]
+
+    The available commands for execution are listed below.
+    The most common, useful commands are shown first, followed by
+    less common or more advanced commands. If you're just getting
+    started with Terraform, stick with the common commands. For the
+    other commands, please read the help and docs before usage.
+
+    Common commands:
+    apply               Builds or changes infrastructure
+    console            Interactive console for Terraform interpolations
+    destroy            Destroy Terraform-managed infrastructure
+    fmt                  Rewrites config files to canonical format
+    get                  Download and install modules for the configuration
+    graph              Create a visual graph of Terraform resources
+    import             Import existing infrastructure into Terraform
+    init                  Initializes Terraform configuration from a module
+    output             Read an output from a state file
+    plan                Generate and show an execution plan
+    push               Upload this Terraform module to Atlas to run
+    refresh            Update local state file against real resources
+    remote            Configure remote state storage
+    show               Inspect Terraform state or plan
+    taint                Manually mark a resource for recreation
+    untaint             Manually unmark a resource as tainted
+    validate           Validates the Terraform files
+    version            Prints the Terraform version
+
+    All other commands:
+    debug              Debug output management (experimental)
+    state                Advanced state management
+
+2. Create EC2 user
+
+When you create an account in AWS for the first time, you are provided with root login that access all services/features in AWS. For AWS best security practice, using root account, create user accounts with limited access to AWS services. Since we will create an infrastructure in AWS using terraform's  API which will interact with EC2 services therefore, we will create an user with access to all EC2 service only.
+
+Login in to AWS console using the root account. Select services->A-Z->IAM
+
+Select IAM service
+
+Click Users from IAM dashboard.
+
+Select user from left side bar in IAM Dashboard
+
+Click "Add user"
+
+Click add user in IAM
+
+Provide an user name and click only "Programmatic access". We have provided user name as "terraformuser". Click "Next:Permission"
+
+IAM user name and access type
+
+Next click "Create Group". Provide a group name and in the policy type, filter by AmazonEC2. Select the first row which which gives Amazon EC2 full access.
+
+Grant full access to EC2
+
+Click "Next: Review"
+
+IAM user review
+
+Click "Create user"
+
+Create IAM user
+
+Download the newly created users Access key ID and Secret key by clicking "Download .csv'. These credentials are needed to connect to Amazon EC2 service through terraform
+
+Download AWS terraform user key and ID
+3. Terraform file
+
+As we are already aware that terraform is a command line tool for creating, updating and versioning infrastructure in the cloud then obviously we want to know how does it do so? Terraform describes infrastructure in a file using the language called Hashicorp Configuration Language (HCL) with the extension of .tf It is a declarative language that describes infrastructure in the cloud. When we write our infrastructure using HCL in .tf file, terraform generates an execution plan that describes what it will do to reach the desired state. Once execution plan is ready, terraform executes the plan and generates a state file by the name terraform.tfstate by default. This file maps resource meta data to the actual resource ID and lets terraform knows what it is managing in the cloud.
+4. Terraform and provision AWS
+
+To deploy an EC2 instance through terraform create a file with extension .tf This file contains namely two section. The first section declares the provider (in our case it is AWS). In provider section we will specify the access key and secret key that is written in the CSV file which we have downloaded earlier while creating EC2 user. Also choose the region of your choice. The resource block defines what resources we want to create. Since we want to create EC2 instance therefore we specified with "aws_instance" and the instance attributes inside it like ami, instance_type and tags. To find the EC2 images browse ubuntu cloud image.
+
+    [root@mysandbox src]# cd
+    [root@mysandbox ~]# mkdir terraform
+    [root@mysandbox ~]# cd terraform/
+    [root@mysandbox terraform]# vi aws.tf
+
+    provider "aws" {
+    access_key = "ZKIAITH7YUGAZZIYYSZA"
+    secret_key = "UlNapYqUCg2m4MDPT9Tlq+64BWnITspR93fMNc0Y"
+    region = "ap-southeast-1"
+    }
+
+    resource "aws_instance" "example" {
+    ami = "ami-83a713e0"
+    instance_type = "t2.micro"
+    tags {
+    Name = "your-instance"
+    }
+    }
+
+Apply terraform plan first to find out what terraform will do. The terraform plan will let us know what changes, additions and deletions will be done to the infrastructure before actually applying it. The resources with '+' sign are going to be created, resources with '-' sign are going to be deleted and resources with '~' sign are going to be modified.
+
+    [root@mysandbox terraform]# terraform plan
+
+Now to create the instance, execute terraform apply
+
+    [root@mysandbox terraform]# terraform apply
+
+    aws_instance.example: Creating...
+    ami:                                                   "" => "ami-83a713e0"
+    associate_public_ip_address:             "" => "<computed>"
+    availability_zone:                                "" => "<computed>"
+    ebs_block_device.#:                          "" => "<computed>"
+    ephemeral_block_device.#:                "" => "<computed>"
+    instance_state:                                    "" => "<computed>"
+    instance_type:                                     "" => "t2.micro"
+    key_name:                                          "" => "<computed>"
+    network_interface_id:                         "" => "<computed>"
+    placement_group:                               "" => "<computed>"
+    private_dns:                                        "" => "<computed>"
+    private_ip:                                          "" => "<computed>"
+    public_dns:                                         "" => "<computed>"
+    public_ip:                                           "" => "<computed>"
+    root_block_device.#:                          "" => "<computed>"
+    security_groups.#:                              "" => "<computed>"
+    source_dest_check:                           "" => "true"
+    subnet_id:                                          "" => "<computed>"
+    tags.%:                                              "" => "1"
+    tags.Name:                                        "" => "your-instance"
+    tenancy:                                             "" => "<computed>"
+    vpc_security_group_ids.#:                 "" => "<computed>"
+    aws_instance.example: Still creating... (10s elapsed)
+    aws_instance.example: Still creating... (20s elapsed)
+    aws_instance.example: Creation complete
+
+    Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+    The state of your infrastructure has been saved to the path
+    below. This state is required to modify and destroy your
+    infrastructure, so keep it safe. To inspect the complete state
+    use the `terraform show` command.
+
+Next  we head over to EC2 dashboard, we will find that the new instance being initializing.
+
+EC2 instance initializing
+5. A more complex terraform example
+
+Now that, we have understood how to create an EC2 instance using terraform, let us create a bit more advance infrastructure using terraform. Our infrastructure aim includes-
+
+→ Creating a VPC with CIDR 10.0.0.0/16
+
+→ A public subnet inside VPC with CIDR 10.0.1.0/24
+
+→ A private subnet inside VPC with CIDR 10.0.2.0/24
+
+→ Security groups for both public and private instances
+
+→Three EC2 instances- Web server, Database server and NAT instance
+
+First, We create a key pair by the name linoxide-deployer.pem through AWS console. To do that, click "Key-pairs" from EC2 dashboard followed by "Create Key Pair" and save it in a newly created directory inside terraform folder that we have created in step 4.
+
+Create key pair
+
+    [root@mysandbox ]# cd ~/terraform
+    [root@mysandbox ]# mkdir ssh
+
+Download and copy linoxide-deployer.pem inside ~/terraform/ssh directory.
+
+Now, We start creating resources one by one starting from VPC. Also we will split the configuration into several .tf files based on what they does. e.g for creating VPC resource, we will create a file by the name vpc.tf so that we can keep track of what each file does. Before creating resources, let us declare all variables in variables.tf file.
+
+variables.tf
+
+    variable "access_key" {
+    description = "AWS access key"
+    default = "ZKIAITH7YUGAZZIYYSZA"
+    }
+
+    variable "secret_key" {
+    description = "AWS secret key"
+    default = "UlNapYqUCg2m4MDPT9Tlq+64BWnITspR93fMNc0Y"
+    }
+
+    variable "region" {
+    description = "AWS region for hosting our your network"
+    default = "ap-southeast-1"
+    }
+
+    variable "key_path" {
+    description = "Key path for SSHing into EC2"
+    default  = "./ssh/linoxide-deployer.pem"
+    }
+
+    variable "key_name" {
+    description = "Key name for SSHing into EC2"
+    default = "linoxide-deployer"
+    }
+
+    variable "vpc_cidr" {
+    description = "CIDR for VPC"
+    default     = "10.0.0.0/16"
+    }
+
+    variable "public_subnet_cidr" {
+    description = "CIDR for public subnet"
+    default     = "10.0.1.0/24"
+    }
+
+    variable "private_subnet_cidr" {
+    description = "CIDR for private subnet"
+    default     = "10.0.2.0/24"
+    }
+
+    variable "amis" {
+    description = "Base AMI to launch the instances"
+    default = {
+    ap-southeast-1 = "ami-83a713e0"
+    ap-southeast-2 = "ami-83a713e0"
+    }
+    }
+
+Let us define VPC with CIDR block of 10.0.0.0/16
+
+vpc.tf
+
+    resource "aws_vpc" "default" {
+    cidr_block = "${var.vpc_cidr}"
+    enable_dns_hostnames = true
+    tags {
+    Name = "terraform-aws-vpc"
+    }
+    }
+
+Define the gateway
+
+gateway.tf
+
+    resource "aws_internet_gateway" "default" {
+    vpc_id = "${aws_vpc.default.id}"                                                                                                                                       tags {
+    Name = "linoxide gw"
+    }
+    }
+
+Define public subnet with CIDR 10.0.1.0/24
+
+public.tf
+
+    resource "aws_subnet" "public-subnet-in-ap-southeast-1" {
+    vpc_id = "${aws_vpc.default.id}"
+
+    cidr_block = "${var.public_subnet_cidr}"
+    availability_zone = "ap-southeast-1a"
+
+    tags {
+    Name = "Linoxide Public Subnet"
+    }
+    }
+
+Define private subnet with CIDR 10.0.2.0/24
+
+private.tf
+
+    resource "aws_subnet" "private-subnet-ap-southeast-1" {
+    vpc_id = "${aws_vpc.default.id}"
+
+    cidr_block = "${var.private_subnet_cidr}"
+    availability_zone = "ap-southeast-1a"
+
+    tags {
+    Name = "Linoxide Private Subnet"
+    }
+    }
+
+Route table for public/private subnet
+
+route.tf
+
+    resource "aws_route_table" "public-subnet-in-ap-southeast-1" {
+    vpc_id = "${aws_vpc.default.id}"
+
+    route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.default.id}"
+    }
+
+    tags {
+    Name = "Linoxide Public Subnet"
+    }
+    }
+
+    resource "aws_route_table_association" "public-subnet-in-ap-southeast-1-association" {
+    subnet_id = "${aws_subnet.public-subnet-in-ap-southeast-1.id}"
+    route_table_id = "${aws_route_table.public-subnet-in-ap-southeast-1.id}"
+    }
+
+    resource "aws_route_table" "private-subnet-in-ap-southeast-1" {
+    vpc_id = "${aws_vpc.default.id}"
+
+    route {
+    cidr_block = "0.0.0.0/0"
+    instance_id = "${aws_instance.nat.id}"
+    }
+
+    tags {
+    Name = "Linoxide Private Subnet"
+    }
+    }
+
+    resource "aws_route_table_association" "private-subnet-in-ap-southeast-1-association" {
+    subnet_id = "${aws_subnet.private-subnet-in-ap-southeast-1.id}"
+    route_table_id = "${aws_route_table.private-subnet-in-ap-southeast-1.id}"
+    }
+
+Define NAT security group
+
+natsg.tf
+
+    resource "aws_security_group" "nat" {
+    name = "vpc_nat"
+    description = "NAT security group"
+
+    ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["${var.private_subnet_cidr}"] }
+    ingress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["${var.private_subnet_cidr}"] }
+    ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    ingress {
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+    cidr_blocks = ["0.0.0.0/0"] }
+
+    egress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    egress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    egress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["${var.vpc_cidr}"] }
+    egress {
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+    cidr_blocks = ["0.0.0.0/0"] }
+
+    vpc_id = "${aws_vpc.default.id}"
+
+    tags {
+    Name = "NATSG"
+    }
+    }
+
+Define security group for Web
+
+websg.tf
+
+    resource "aws_security_group" "web" {
+    name = "vpc_web"
+    description = "Accept incoming connections."
+
+    ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    ingress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    ingress {
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+    cidr_blocks = ["0.0.0.0/0"] }
+
+    egress {
+    from_port = 3306
+    to_port = 3306
+    protocol = "tcp"
+    cidr_blocks = ["${var.private_subnet_cidr}"] }
+
+    vpc_id = "${aws_vpc.default.id}"
+
+    tags {
+    Name = "WebServerSG"
+    }
+    }
+
+Define security group for database in private subnet
+
+dbsg.tf
+
+    resource "aws_security_group" "db" {
+    name = "vpc_db"
+    description = "Accept incoming database connections."
+
+    ingress {
+    from_port = 3306
+    to_port = 3306
+    protocol = "tcp"
+    security_groups = ["${aws_security_group.web.id}"] }
+
+    ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["${var.vpc_cidr}"] }
+    ingress {
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+    cidr_blocks = ["${var.vpc_cidr}"] }
+
+    egress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+    egress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] }
+
+    vpc_id = "${aws_vpc.default.id}"
+
+    tags {
+    Name = "DBServerSG"
+    }
+    }
+
+Define web-server instance
+
+webserver.tf
+
+    resource "aws_instance" "web-1" {
+    ami = "${lookup(var.amis, var.region)}"
+    availability_zone = "ap-southeast-1a"
+    instance_type = "t2.micro"
+    key_name = "${var.key_name}"
+    vpc_security_group_ids = ["${aws_security_group.web.id}"] subnet_id = "${aws_subnet.public-subnet-in-ap-southeast-1.id}"
+    associate_public_ip_address = true
+    source_dest_check = false
+
+    tags {
+    Name = "Web Server LAMP"
+    }
+    }
+
+Define DB instance
+
+dbinstance.tf
+
+    resource "aws_instance" "db-1" {
+    ami = "${lookup(var.amis, var.region)}"
+    availability_zone = "ap-southeast-1a"
+    instance_type = "t2.micro"
+    key_name = "${var.key_name}"
+    vpc_security_group_ids = ["${aws_security_group.db.id}"] subnet_id = "${aws_subnet.private-subnet-in-ap-southeast-1.id}"
+    source_dest_check = false
+
+    tags {
+    Name = "Database Server"
+    }
+    }
+
+Define NAT instance
+
+natinstance.tf
+
+    resource "aws_instance" "nat" {
+    ami = "ami-1a9dac48" # this is a special ami preconfigured to do NAT
+    availability_zone = "ap-southeast-1a"
+    instance_type = "t2.micro"
+    key_name = "${var.key_name}"
+    vpc_security_group_ids = ["${aws_security_group.nat.id}"] subnet_id = "${aws_subnet.public-subnet-in-ap-southeast-1.id}"
+    associate_public_ip_address = true
+    source_dest_check = false
+
+    tags {
+    Name = "NAT instance"
+    }
+    }
+
+Allocate EIP for NAT and Web instance
+
+eip.tf
+
+    resource "aws_eip" "nat" {
+    instance = "${aws_instance.nat.id}"
+    vpc = true
+    }
+    resource "aws_eip" "web-1" {
+    instance = "${aws_instance.web-1.id}"
+    vpc = true
+    }
+
+Execute terraform plan first to find out what terraform will do. You can also make a final recheck of your infrastructure before executing terraform apply
+
+    [root@mysandbox terraform]# terraform plan
+    ----------------------------
+    ----------------------------
+    Plan: 16 to add, 0 to change, 0 to destroy.
+
+There are total 16 plans to be added, nothing to change or destroy
+
+Now execute terraform apply
+
+    [root@mysandbox terraform]# terraform apply
+
+Once the execution of above command completed, our infrastructure will come alive with one VPC, two subnet, Gateway, routing tables, security groups, EIP association, all the three EC2 instances etc. You will have all the 16 resources. You can create the infrastructure graph using the following command.
+
+    [root@mysandbox terraform]# terraform graph | dot -Tpng > infrastructure_graph.png
+
+terraform and provision AWS
+
+Now connect to NAT instance from your local workstation, you will be inside the NAT instance. The private IP allocated to NAT instance in our infrastructure is 10.0.1.220.  Access the instance inside private subnet i.e DB instance through NAT instance as well as 'Web Server LAMP' instance. The private IP allocated to DB and Web server instances are 10.0.2.220 and 10.0.1.207 respectively. Browse EC2 dashboard to find the private IP allocated to your instances.
+
+    [root@mysandbox terraform]# ssh -i "./ssh/linoxide-deployer.pem" ec2-user@ec2-52-220-223-173.ap-southeast-1.compute.amazonaws.com
+
+Ping DB instance from NAT
+
+    [ec2-user@ip-10-0-1-220 ~]$ ping 10.0.2.220
+    PING 10.0.2.220 (10.0.2.220) 56(84) bytes of data.
+    64 bytes from 10.0.2.220: icmp_seq=1 ttl=64 time=0.321 ms
+    64 bytes from 10.0.2.220: icmp_seq=2 ttl=64 time=0.452 ms
+    64 bytes from 10.0.2.220: icmp_seq=3 ttl=64 time=0.393 ms
+
+Ping Web server instance from NAT
+
+    [ec2-user@ip-10-0-1-220 ~]$ ping 10.0.1.207
+    PING 10.0.1.207 (10.0.1.207) 56(84) bytes of data.
+    64 bytes from 10.0.1.207: icmp_seq=1 ttl=64 time=0.747 ms
+    64 bytes from 10.0.1.207: icmp_seq=2 ttl=64 time=0.517 ms
+
+We have installed terraform and provision AWS. You can now use the code to easily update your infrastructure and even deploy it in another region with minor modification.
