@@ -1,0 +1,9 @@
+# Compiled files
+*.tfstate
+*.tfstate.backup
+
+# Sensitive data
+*.tfvars
+/.idea/
+/.terraform/
+/.terraform.tfstate.lock.info

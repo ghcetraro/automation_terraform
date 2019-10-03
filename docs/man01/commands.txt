@@ -1,0 +1,25 @@
+Commands
+
+mkdir -p ~/.aws/
+touch ~/.aws/credentials
+
+echo [terraform] > ~/.aws/credentials
+echo "aws_access_key_id = xxxxxxxxxxxxxxxxxxx" >> ~/.aws/credentials
+echo "aws_secret_access_key = xxx/xxxxxxxxxxxxx/xxxx " >> ~/.aws/credentials
+
+mkdir -p ~/terraform 
+
+-- create main.tf
+
+terraform init
+terraform plan
+
+terraform plan -var region=eu-west-1
+
+terraform plan -var region=eu-west-1 -var profile=default
+
+--plan command to see if there the EC2 machine will be created:
+terraform plan -var-file=variables.tfvars
+
+-- In order to execute create our EC2 machine, we need to execute: terraform apply 
+terraform apply -var-file=variables.tfvars
